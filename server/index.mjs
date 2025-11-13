@@ -14,6 +14,7 @@ app.get('/', (_req, res) => {
 
 const server = createServer(app);
 const wss = new WebSocketServer({ server });
+const HEARTBEAT_INTERVAL = Number(process.env.HEARTBEAT_INTERVAL_MS ?? 25000);
 
 const rooms = new Map();
 
@@ -65,6 +66,11 @@ wss.on('connection', (socket) => {
   let roomId = null;
   let role = null;
   let clientId = null;
+  socket.isAlive = true;
+
+  socket.on('pong', () => {
+    socket.isAlive = true;
+  });
 
   socket.on('message', (data) => {
     try {
@@ -148,6 +154,30 @@ wss.on('connection', (socket) => {
   socket.on('close', () => {
     cleanupClient(roomId, role, clientId);
   });
+});
+
+const heartbeat = () => {
+  wss.clients.forEach((client) => {
+    if (client.readyState === client.CLOSING || client.readyState === client.CLOSED) {
+      return;
+    }
+    if (client.isAlive === false) {
+      client.terminate();
+      return;
+    }
+    client.isAlive = false;
+    if (typeof client.ping === 'function') {
+      client.ping();
+    } else {
+      client.send(JSON.stringify({ type: 'ping', timestamp: Date.now() }));
+    }
+  });
+};
+
+const heartbeatInterval = setInterval(heartbeat, HEARTBEAT_INTERVAL);
+
+wss.on('close', () => {
+  clearInterval(heartbeatInterval);
 });
 
 server.listen(PORT, () => {

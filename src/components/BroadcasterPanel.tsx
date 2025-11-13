@@ -185,6 +185,8 @@ const BroadcasterPanel = ({ room, onLeave }: BroadcasterPanelProps) => {
         case 'signal':
           handleSignal(message.viewerId, message.payload);
           break;
+        case 'ping':
+          break;
         default:
           break;
       }

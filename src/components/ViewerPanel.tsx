@@ -140,6 +140,8 @@ const ViewerPanel = ({ room, autoStart = false, onLeave }: ViewerPanelProps) => 
         case 'signal':
           handleSignal(message.payload);
           break;
+        case 'ping':
+          break;
         default:
           break;
       }
