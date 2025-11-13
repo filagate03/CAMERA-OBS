@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: web-streamer-signal
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server/index.mjs
+    envVars:
+      - key: CORS_ORIGIN
+        value: "*"
