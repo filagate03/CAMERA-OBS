@@ -15,6 +15,15 @@ export const ICE_SERVERS: RTCIceServer[] = [
     username: 'openrelayproject',
     credential: 'openrelayproject',
   },
+  {
+    urls: [
+      'stun:freestun.net:3478',
+      'turn:freestun.net:3478',
+      'turn:freestun.net:3478?transport=tcp',
+    ],
+    username: 'free',
+    credential: 'free',
+  },
 ];
 
 export const MEDIA_CONSTRAINTS: MediaStreamConstraints = {
