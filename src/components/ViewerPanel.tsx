@@ -20,6 +20,8 @@ const ViewerPanel = ({ room, autoStart = false, onLeave }: ViewerPanelProps) => 
   const [clientId, setClientId] = useState<string | null>(null);
   const [broadcasterOnline, setBroadcasterOnline] = useState(false);
   const [started, setStarted] = useState(autoStart);
+  const [iceState, setIceState] = useState<RTCIceConnectionState>('new');
+  const [mediaState, setMediaState] = useState<'idle' | 'playing' | 'muted' | 'error'>('idle');
 
   const sendSignal = useCallback(
     (payload: SignalPayload) => {
@@ -48,6 +50,17 @@ const ViewerPanel = ({ room, autoStart = false, onLeave }: ViewerPanelProps) => 
       const [stream] = event.streams;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        const playPromise = videoRef.current.play();
+        if (playPromise) {
+          playPromise
+            .then(() => {
+              setMediaState('playing');
+            })
+            .catch(() => {
+              setMediaState('muted');
+              setError('Видео заблокировано браузером. Нажми Play.');
+            });
+        }
       }
     };
 
@@ -57,11 +70,16 @@ const ViewerPanel = ({ room, autoStart = false, onLeave }: ViewerPanelProps) => 
       }
     };
 
+    pc.oniceconnectionstatechange = () => {
+      setIceState(pc.iceConnectionState);
+    };
+
     pc.onconnectionstatechange = () => {
       if (pc.connectionState === 'connected') {
         setStatus('streaming');
       } else if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
         setStatus('error');
+        setError('WebRTC соединение разорвано.');
       }
     };
 
@@ -190,8 +208,26 @@ const ViewerPanel = ({ room, autoStart = false, onLeave }: ViewerPanelProps) => 
         <div className={`status status--${status}`}>{status}</div>
       </header>
 
+      <div className="panel__stats">
+        <div>
+          <span className="eyebrow">ICE</span>
+          <p className="stat-value">{iceState}</p>
+        </div>
+        <div>
+          <span className="eyebrow">Media</span>
+          <p className="stat-value">{mediaState}</p>
+        </div>
+      </div>
+
       <div className="video-wrapper">
-        <video ref={videoRef} autoPlay playsInline className="video-preview" />
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
+          className="video-preview"
+          controls={mediaState === 'muted'}
+        />
       </div>
 
       {error ? <p className="error">{error}</p> : null}
